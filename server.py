@@ -3,8 +3,13 @@ from aiortc import RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.media import MediaRecorder, MediaStreamTrack
 from aiohttp import web
 import json
+import random
 
 pcs: set[RTCPeerConnection] = set()
+
+
+def get_random_id() -> int:
+    return random.randint(1, 1000)
 
 
 async def offer(request: web.Request) -> web.Response:
@@ -26,7 +31,7 @@ async def offer(request: web.Request) -> web.Response:
     async def on_track(track: MediaStreamTrack):
         print("Track %s received" % track.kind)
         if track.kind == "video":
-            recorder = MediaRecorder("received_video.mp4")
+            recorder = MediaRecorder(f"received_video_{get_random_id()}.mp4")
             recorder.addTrack(track)
             await recorder.start()
 
