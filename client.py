@@ -4,7 +4,7 @@ from aiortc.contrib.media import MediaPlayer
 import aiohttp
 
 
-async def run(pc):
+async def run(pc: RTCPeerConnection):
     async with aiohttp.ClientSession() as session:
         async with session.post(
             "http://localhost:8080/offer",

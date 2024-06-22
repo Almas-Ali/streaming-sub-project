@@ -1,10 +1,10 @@
 import asyncio
 from aiortc import RTCPeerConnection, RTCSessionDescription
-from aiortc.contrib.media import MediaRecorder
+from aiortc.contrib.media import MediaRecorder, MediaStreamTrack
 from aiohttp import web
 import json
 
-pcs = set()
+pcs: set[RTCPeerConnection] = set()
 
 
 async def offer(request):
@@ -23,7 +23,7 @@ async def offer(request):
             print(f"pc '{pc}' closed")
 
     @pc.on("track")
-    async def on_track(track):
+    async def on_track(track: MediaStreamTrack):
         print("Track %s received" % track.kind)
         if track.kind == "video":
             recorder = MediaRecorder("received_video.mp4")
@@ -55,7 +55,7 @@ async def offer(request):
     )
 
 
-async def on_shutdown(app):
+async def on_shutdown(app: web.Application):
     coros = [pc.close() for pc in pcs]
     await asyncio.gather(*coros)
     pcs.clear()
