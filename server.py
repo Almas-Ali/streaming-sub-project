@@ -7,7 +7,7 @@ import json
 pcs: set[RTCPeerConnection] = set()
 
 
-async def offer(request):
+async def offer(request: web.Request) -> web.Response:
     params = await request.json()
     offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
 
