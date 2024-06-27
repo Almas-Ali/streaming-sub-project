@@ -1,7 +1,9 @@
 import asyncio
-from aiortc import RTCPeerConnection, RTCSessionDescription
-from aiortc.contrib.media import MediaPlayer
+
 import aiohttp
+from aiortc import RTCPeerConnection, RTCSessionDescription, RTCDataChannel
+
+# from aiortc.contrib.media import MediaPlayer
 
 
 async def run(pc: RTCPeerConnection):
@@ -19,30 +21,46 @@ async def run(pc: RTCPeerConnection):
 async def main():
     pc = RTCPeerConnection()
 
-    player = MediaPlayer(
-        "/dev/video0",
-        format="v4l2",
-        options={"framerate": "30", "video_size": "640x480"},
-    )
-    video_track = player.video
+    # For video stream with webcam
+    # player = MediaPlayer(
+    #     "/dev/video0",
+    #     # "video.mp4",
+    #     format="v4l2",
+    #     # format="video4linux2",
+    #     # options={"framerate": "30", "video_size": "640x480"},
+    #     options={"framerate": "30", "video_size": "1280x720"},
+    # )
 
-    @pc.on("datachannel")
-    def on_datachannel(channel):
-        @channel.on("message")
-        def on_message(message):
-            print("Data channel message:", message)
+    # For send video file as track
+    # player = MediaPlayer("video.mp4")
+    # video_track = player.video
 
-    @pc.on("iceconnectionstatechange")
-    async def on_iceconnectionstatechange():
-        if pc.iceConnectionState == "failed":
-            await pc.close()
+    fp = open("video.mp4", "rb")
 
-    @pc.on("iceconnectionstatechange")
-    async def on_iceconnectionstatechange():
+    done_reading: bool = False
+    channel: RTCDataChannel = pc.createDataChannel("video_stream") # type: ignore
+
+    def send_data() -> None:
+        nonlocal done_reading
+
+        while (
+            channel.bufferedAmount <= channel.bufferedAmountLowThreshold
+        ) and not done_reading:
+            data = fp.read(16384)
+            channel.send(data)
+            if not data:
+                done_reading = True
+
+    channel.on("bufferedamountlow", send_data)
+    channel.on("open", send_data)
+
+    @pc.on("iceconnectionstatechange") # type: ignore
+    async def on_iceconnectionstatechange(): # type: ignore
         if pc.iceConnectionState in ["failed", "disconnected", "closed"]:
             await pc.close()
 
-    pc.addTrack(video_track)
+    # send track
+    # pc.addTrack(video_track)
 
     offer = await pc.createOffer()
     await pc.setLocalDescription(offer)
